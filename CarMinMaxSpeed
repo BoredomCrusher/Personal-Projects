@@ -1,0 +1,55 @@
+// Write a *refined* and *clean* solution that runs in O(logn).
+// Game Plan: 
+//    Find min: impliment Binary Search.
+//    Find max: return the larger of the first & last array values.
+
+class Car {
+    private minSpeed;
+    private maxSpeed;
+    public int getMinSpeed();
+    public void setMinSpeed(int speed);
+    ...
+}
+
+private int calculateMinSpeed(int[] speeds) {
+    int start = 0;
+    int end = speeds.length;
+int middle = speeds.length/2;
+
+// While the current value is not less than the values in front and behind it, the loop runs.
+while (!(speeds[middle] < speeds[middle + 1] && speeds[middle] < speeds[middle - 1])) {
+
+    if (speeds[middle] > speeds[middle + 1]) {
+        // Modify array to speeds[middle...end]
+        start = middle;        
+}
+if (speeds[middle] > speeds[middle - 1]) {
+// Modify array to speeds[start...middle]
+end = middle;
+}
+
+// Reset middle to the new middle of the modified data set.
+middle = (start + end) / 2;
+   }
+    return speeds[middle];
+}
+
+private int calculateMaxSpeed(int[] speeds) {
+    return speeds[0] > speeds[speeds.length - 1]
+        ? speeds[0]
+        : speeds[speeds.length - 1];
+}
+
+private boolean checkSpeedValid(...) {...}
+
+public Car carSpeedMinMax(int[] speeds) {
+    if (speeds.length < 3) {
+        System.out.println("Invalid input.");
+        // throw new SpeedReadingInvalidException();
+        return new Car();
+    }
+
+    return new Car(
+        calculateMinSpeed(speeds),
+        calculateMaxSpeed(speeds));
+}
