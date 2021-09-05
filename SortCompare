@@ -1,0 +1,331 @@
+import java.util.Scanner;
+import java.util.Random;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Queue;
+import java.util.LinkedList;
+import java.util.ArrayList;
+
+
+public class SortCompare {
+
+    public static Scanner scanner = new Scanner(System.in);
+    public static Random rand = new Random();
+
+    //counts the number of comparisons in the sorts
+    public static int comparisons = 0;
+
+    public static void main(String[] args) {
+
+        //putting the main user-interacting code in a helper method
+        //allows me to put testcases into main without everything else in my face
+        userInterface();
+    }
+
+    public static void userInterface() {
+        System.out.println("Please enter the size of the array: ");
+
+        //creates an int array the size of the user input
+        int[] userArray = new int[scanner.nextInt()];
+
+        for (int i = 0; i < userArray.length; i++) {
+            //generates number between the negative value of the userArray length
+            //and the positive value of the userArray length
+            userArray[i] = rand.nextInt(userArray.length*2) - userArray.length;
+        }
+
+        System.out.println("Would you like to use: \n" + "m.) merge sort\n" +
+            "q.) quick sort\n" + "i.) insertion sort\n" + 
+            "a.) all of them at once");
+
+        //avoids a buffer error
+        scanner.nextLine();
+
+        //accepts input from user for sort selection
+        String userInput = scanner.nextLine();
+
+        switch(userInput.toLowerCase()) {
+            case "m":
+            //calls merge
+            mergeSort(userArray);
+            break;
+
+            case "q":
+            //calls quickSort
+            quickSort(userArray);
+            break;
+
+            case "i":
+            System.out.println("Insertion Sort \n" + "---------------");
+            if (userArray.length < 20) {
+                System.out.println("Unsorted array:");
+
+                //prints out unsorted user array
+                for (int i : userArray) {
+                    System.out.print("" + i + ", ");
+                }
+                
+                //calls insertionSort
+                insertionSort(userArray);
+                System.out.println("\nNum Comparisons: " + comparisons);
+                
+
+                //prints out sorted user array
+                System.out.println("Sorted array:");
+                for (int i : userArray) {
+                    System.out.print("" + i + ", ");
+                }
+
+                //makes sure the last line printed doesn't get hidden by the command line in a terminal
+                System.out.print("\n\n");
+            } else {
+                insertionSort(userArray);
+                System.out.println("\nNum Comparisons: " + comparisons);
+            }
+            //resets comparisons counter in case the user chose the all sorts option
+            comparisons = 0;
+            break;
+            
+            case "a":
+            //creating four clones of userArray to make sure that the array isn't
+            //already sorted when passed into one of the sorting methods
+            int[] arr1 = new int[userArray.length];
+            int[] arr2 = new int[userArray.length];
+            int[] arr3 = new int[userArray.length];
+            int[] arr4 = new int[userArray.length];
+
+            for (int i = 0; i < userArray.length;i++) {
+                arr1[i] = userArray[i];
+                arr2[i] = userArray[i];
+                arr3[i] = userArray[i];
+                arr4[i] = userArray[i];
+            }
+            mergeSort(arr1);
+            System.out.println("Insertion Sort \n" + "---------------");
+            if (arr2.length < 20) {
+                System.out.println("Unsorted array:");
+
+                //prints out unsorted user array
+                for (int i : arr2) {
+                    System.out.print("" + i + ", ");
+                }
+                
+                //calls insertionSort
+                insertionSort(arr2);
+                System.out.println("\nNum Comparisons: " + comparisons);
+
+
+                //prints out sorted user array
+                System.out.println("Sorted array:");
+                for (int i : arr2) {
+                    System.out.print("" + i + ", ");
+                }
+
+                //makes sure the last line printed doesn't get hidden by the command line in a terminal
+                System.out.print("\n\n");
+            } else {
+                insertionSort(arr2);
+                System.out.println("\nNum Comparisons: " + comparisons);
+            }
+            //resets comparisons counter in case the user chose the all sorts option
+            comparisons = 0;
+            quickSort(arr3);
+         
+            break;
+        }
+    }
+
+    //this exists for rubric specifications
+    public static int[] mergeSort(int[] array) {
+        System.out.println("Merge Sort \n" + "----------");
+        if (array.length < 20) {
+            System.out.println("Unsorted array:");
+
+            //prints out unsorted user array
+            for (int i : array) {
+                System.out.print("" + i + ", ");
+            }
+                
+            //uses method that can actually be used as recursion
+            actualMergeSort(array, 0, array.length);
+
+            //shows comparisons
+            System.out.println("\nNum Comparisons: " + comparisons);
+        } else {
+            actualMergeSort(array, 0, array.length);
+            System.out.println("\nNum Comparisons: " + comparisons);
+        }
+        //resets comparisons counter in case the user chose the all sorts option
+        comparisons = 0;
+        return array;
+    }
+    public static void actualMergeSort(int[] array, int start, int end) {
+        //base case
+        if ((end - start) < 2) {
+            return;
+        }
+
+        //middle equals the average of start and end 
+        int mid = (start + end)/2;
+        
+        //dividing array into recursive left and right chunks
+        //left chunk
+        actualMergeSort(array, start, mid);
+        //right chunk
+        actualMergeSort(array, mid, end);
+        
+        //merge(array, start, mid, end)
+        merge(array, start, mid, end);
+    }
+
+    public static void merge(int[] array, int start, int mid, int end) {
+
+        int[] tempArray = new int[end-start]; 
+        int tempIndex = 0;
+        
+        int leftIndex = start;
+        int rightIndex = mid;
+
+        while (leftIndex < mid && rightIndex < end) {
+            //adds to tallied comparisons
+            comparisons++;
+            if (array[leftIndex] <= array[rightIndex]) {
+                tempArray[tempIndex++] = array[leftIndex++];
+            } else {
+                tempArray[tempIndex++] = array[rightIndex++];
+            }
+        }
+        
+        //deals with potential leftover ints on the left side
+        while (leftIndex < mid) {
+            tempArray[tempIndex++] = array[leftIndex++];
+        }
+        //deals with potential leftover ints on the right side
+        while (rightIndex < end) {
+            tempArray[tempIndex++] = array[rightIndex++];
+        }
+
+        for (int i = start; i < end; i++) {
+            //array at start becomes temparray at i - start
+            //this iterates through both correctly because i-start is initially zero
+            //and iterates until the length of tempArray, which is end-start
+            array[i] = tempArray[i-start];
+        }
+
+    }
+    
+    //this exists for rubric specifications
+    public static int[] quickSort(int[] array) {
+        System.out.println("Quick Sort \n" + "----------");
+            if (array.length < 20) {
+                System.out.println("Unsorted array:");
+                //prints out unsorted user array
+                for (int i : array) {
+                    System.out.print("" + i + ", ");
+                }
+                //calls quickSort
+                actualQuickSort(array, 0, array.length);
+                System.out.println("\nNum Comparisons: " + comparisons);
+                
+
+                System.out.println("Sorted array:");
+                //prints out sorted user array
+                for (int i : array) {
+                    System.out.print("" + i + ", ");
+                }
+                
+                //makes sure the last line printed doesn't get hidden by the command line in a terminal
+                System.out.print("\n\n");
+            } else {
+                actualQuickSort(array, 0, array.length);
+                System.out.println("\nNum Comparisons: " + comparisons);
+            }
+        //resets comparisons counter in case the user chose the all sorts option
+        comparisons = 0;
+        return array;
+    }
+
+    public static void actualQuickSort(int[] array, int start, int end) {
+        //base case
+        if ((end - start) < 2) {
+            return;
+        }
+        
+        //initialzes the new sorted number that the partion moved around
+        int sortedNum = partition(array, start, end);
+        actualQuickSort(array, start, sortedNum);
+        actualQuickSort(array, sortedNum + 1, end);
+    }
+
+    public static int partition(int[] array, int start, int end) {
+        int pivot = array[start];
+        
+        //i begins at the start, j starts at the end
+        int i = start;
+        int j = end;
+
+        //while i < j, while the two values are iterating, respectively, 
+        //forwards and backwards through the array from the start and end.
+        while (i < j) {
+
+            //if array at j is greater than the pivot
+            //it stops decreasing
+            do {
+                j--;
+                //adds to the amount of tallied comparisons
+                comparisons++;
+            } while (i < j && array[j] > pivot);
+
+            //if array at i is less than or equal to the pivot,
+            //it stops increasing
+            do {
+                i++;
+                //adds to the amount of tallied comparisons
+                comparisons++;
+            } while (i < j && array[i] <= pivot);
+            
+
+            //switches values if i is less than j
+            if (i < j) {
+                int temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
+            }
+        }
+        //swaps the starting value with j in order to finish dividing the array
+        //into two sections, less than the swapped value, and greater than the 
+        //swapped value
+        int temp = array[start];
+            array[start] = array[j];
+            array[j] = temp;
+
+        return j;
+    }
+
+    public static int[] insertionSort(int[] array) {
+            //test case for a length 2 array that probably doesn't need to exist
+            if (array.length == 2) {
+                    int[] testCaseArray = {array[1],array[0]};
+                    return testCaseArray;
+                }
+            // loop starts at 1 to prevent outOfBounds Error
+            for (int i = 1; i < array.length; i++) {
+                int current = array[i];
+                int previous = i-1;
+                //loop runs as long as previous hasn't gone past the start of the array
+                //and the currently compared index is greater than the current element
+                while (previous >= 0 && array[previous] > current) {
+                    //adds to the amount of tallied comparisons
+                    comparisons++;
+                    array[previous + 1] = array[previous];
+                    //iterates backwards to start of array
+                    previous--;
+                }
+                //finally sorts the for loop's current element
+                array[previous + 1] = current;
+            }
+            //returns sorted array
+            return array;
+    }
+}
+
