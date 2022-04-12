@@ -1,0 +1,243 @@
+#lang racket
+(require racket/trace)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; CSCI 301, Winter 2021
+;;
+;; Lab #7
+;;
+;; Andrew Cary
+;; W01291652
+;; 
+;; The purpose of this lab is
+;; to build off of lab #6's interpreter
+;; so it can handle letrec statements.
+;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide lookup
+         evaluate
+         special-form?
+         evaluate-special-form
+         closure closure?
+         closure-vars closure-body closure-env
+         apply-function apply-closure
+         set-closure-env!
+         eval-letrec
+         add
+         env
+         )
+
+(define add
+  (lambda (a b)
+    (cond ((and (number? a) (number? b)) (+ a b))
+          ((and (list? a) (list? b)) (append a b))
+          (else (error "unable to add" a b)))))
+
+(define env (map list
+                 '(x y z + - * cons car cdr nil empty? = equal? < else  add list)
+             (list 2 4 6 + - * cons car cdr '() empty? = equal? < #t    add list)))
+
+
+;lookup
+  ;sym - symbol
+  ;env - enviornment
+    ;checks if a symbol is in the environment
+(define lookup
+  (lambda (sym env)
+    (cond
+      
+        [(not (symbol? sym)) (error "not a symbol")]
+      [(cond
+        [(empty? env) (error "not in environment")]
+        [(eq? sym (car (car env))) (cadr (car env))]
+        [(lookup sym (cdr env))]
+       )]
+      
+    )))
+
+
+;special-form?
+  ;list1 - an expression starting with if, cond, or let
+    ;check if list1 is a list and if the first
+    ;value of list1 is if or cond
+(define special-form?
+  (lambda (list1)
+    
+    (and (list? list1)
+          (or (equal? (car  list1) 'if)
+              (equal? (car  list1) 'cond)
+              (equal? (car list1) 'let)
+              (equal? (car list1) 'lambda)
+              (equal? (car list1) 'letrec)))
+    ))
+
+;evaluate
+  ;exp - expression
+  ;env - enviornment
+    ;exp is a number -> return exp
+    ;exp is a symbol -> lookup, return value in env
+    ;exp is a conditional or let -> evaluate-special-form, evaluate expression
+    ;exp is a list -> evaluate each item
+    ;exp is something else -> throw error
+(define evaluate
+  (lambda (exp env)
+    (cond
+      
+    [(number? exp) exp]
+    
+    [(symbol? exp) (lookup exp env)]
+    [(special-form? exp) (evaluate-special-form exp env)]
+    [(list? exp)
+       (let ((mapped (map (lambda (x) (evaluate x env)) exp)))
+                   (apply-function (car mapped) (cdr mapped))
+                   
+        )]
+    
+    [else (error "exp is not a valid input")]
+    
+    )))
+
+;evaluate-special-form
+  ;exp - expression
+  ;env - enviornment
+    ;helper function for evaluate for conditionals and let
+    ;uses helper functions for cond and let
+(define evaluate-special-form
+  (lambda (exp env)
+    (cond
+      
+      [(equal? (car exp) 'if)
+       (cond
+         
+         [(evaluate (cadr exp) env) (evaluate (caddr exp) env)]
+         
+         [else (evaluate (cadddr exp) env)]
+         
+         )]
+      
+      [(equal? (car exp) 'cond) (recurse-cond (cdr exp) env)]
+      [(equal? (car exp) 'let) (eval-let (cdr exp) env)]
+      [(equal? (car exp) 'lambda) (closure
+                                   (cadr exp)
+                                   (caddr exp)
+                                   env)]
+      [(equal? (car exp) 'letrec) (eval-letrec exp env)]
+      
+
+      [else (error "not a conditional input")]
+      
+      )))
+
+;apply-function
+  ;funct - the function, first element of list
+  ;args - the arguments, rest of list
+    ;helps evaluate non-special lists in expressions
+(define apply-function
+  (lambda (funct args)
+      
+      (cond
+
+        [(procedure? funct) (apply funct args)]
+           
+        [(closure? funct) (apply-closure funct args)]
+           
+        [else (error "unknown function type")]
+        )
+      
+      ))
+
+;apply-closure
+  ;clos - closure
+  ;valList - value List
+    ;adds values of a closure into the environment
+    ;then evaluates that enviornment
+(define apply-closure
+ (lambda (clos valList)
+
+   (evaluate (closure-body clos)
+             (append (map (lambda (x y) (list x y)) (closure-vars clos) valList) (closure-env clos)))
+   
+ ))
+
+;closure functions
+(define closure
+(lambda (vars body env)
+(mcons 'closure (mcons env (mcons vars body)))))
+
+(define closure?
+(lambda (clos) (and (mpair? clos) (eq? (mcar clos) 'closure))))
+
+(define closure-env
+(lambda (clos) (mcar (mcdr clos))))
+
+(define closure-vars
+(lambda (clos) (mcar (mcdr (mcdr clos)))))
+
+(define closure-body
+(lambda (clos) (mcdr (mcdr (mcdr clos)))))
+
+(define set-closure-env!
+(lambda (clos new-env) (set-mcar! (mcdr clos) new-env)))
+ 
+;recurse-cond
+  ;exp - expression
+  ;env - enviornment
+    ;recursively evaluates conditionals
+(define recurse-cond
+  (lambda (exp env)
+    (cond
+      
+      [(evaluate (caar exp) env) (cadar exp)]
+      
+      [else (recurse-cond (cdr exp) env)]
+      
+      )))
+
+;eval-let
+  ;exp - expression
+  ;env - enviornment
+    ;emulates let by inputting and evaluating new values
+    ;of variables in an altered environment
+(define eval-let
+  (lambda (exp env)
+    
+    (evaluate (cadr exp) (eval-let-helper (car exp) env))
+    
+    ))
+
+;eval-let-helper
+  ;exp - expression
+  ;env - enviornment
+    ;changes the environment to include new values
+(define eval-let-helper
+  (lambda (exp env)
+    
+    (append (map (lambda (x) (list (car x) (evaluate (cadr x) env)))
+       exp) env)
+    
+    ))
+
+
+;eval-letrec
+  ;exp - expression
+  ;env - enviornment
+    ;emulates letrec by creating and appending temporary emvoirnments
+    ;then using those to evaluate expressions
+(define eval-letrec
+  (lambda (exp env)
+    
+    (let*
+        ([mini (map (lambda (x)
+                      (list (car x) (evaluate (cadr x) env)))
+                    (cadr exp))
+         ]
+         [newenv (append mini env)])
+      
+      (map (lambda (x)
+             (cond [(closure? (cadr x)) (set-closure-env! (cadr x) newenv)])
+           )
+      mini)
+     
+      (evaluate (last exp) newenv))
+    
+    ))
