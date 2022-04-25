@@ -1,0 +1,73 @@
+import java.util.Stack;
+
+public class BalancedBrackets {
+    public static void main(String[] args) {
+        // false test cases
+        System.out.println("should return false: " + check(""));
+        System.out.println("should return false: " + check("   "));
+        System.out.println("should return false: " + check("}"));
+        System.out.println("should return false: " + check("("));
+        System.out.println("should return false: " + check(")("));
+        System.out.println("should return false: " + check("({["));
+        System.out.println("should return false: " + check("[(])"));
+        System.out.println("should return false: " + check("()]"));
+        System.out.println("should return false: " + check(")]}"));
+        System.out.println();
+
+        // true test cases
+        System.out.println("should return true: " + check("()"));
+        System.out.println("should return true: " + check("()[]{}"));
+        System.out.println("should return true: " + check("[({})]"));
+        System.out.println("should return true: " + check("([](){})"));
+        System.out.println("should return true: " + check("((()())())"));
+        System.out.println();
+    }
+
+    // Create a function called "check" that returns true if the 
+    // brackets are balanced in a given string, otherwise false
+    // Use the unit tests to validate the function's behavior
+    // Assume the brackets will be one of () [] {}
+
+    public static boolean check(String s) {
+        // test case for if the String only contains 1 or 0 characters
+        // since it's impossible for the string to be "balanced" thenS
+        if (s.length() < 2) {
+            return false;
+        }
+
+        Stack<Character> charStack = new Stack<Character>();
+
+        for (int i = 0; i < s.length(); i++) {
+            char currentChar = s.charAt(i);
+
+            switch (currentChar) {
+                case '{':
+                charStack.push('}');
+                break;
+
+                case '[':
+                charStack.push(']');
+                break;
+
+                case '(':
+                charStack.push(')');
+                break;
+            }
+            
+            // If the stack is ever empty at this point,
+            // either the input is invalid or the input is unbalanced.
+            // Spaces count as an invalid input.
+            if (charStack.isEmpty()) {
+                return false;
+            }
+            
+            if (charStack.peek() == currentChar) {
+                charStack.pop();
+            }
+        }
+
+        // If the stack is empty at the end of the loop,
+        // the input is balanced.
+        return charStack.isEmpty();
+    }
+}
